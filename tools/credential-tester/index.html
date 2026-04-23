@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free MCP Credential Tester | Universal Agent Economy OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col items-center py-10">
+    <div class="w-full max-w-3xl bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-extrabold text-indigo-700 mb-2">Free MCP Credential Tester</h1>
+            <p class="text-gray-500">Test your Agent Economy OS credentials, x402 payments, and tool calls in simulation mode.</p>
+        </header>
+
+        <form id="testerForm" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Agent ID -->
+                <div>
+                    <label for="agent_id" class="block text-sm font-medium text-gray-700 mb-1">Agent ID</label>
+                    <input type="text" id="agent_id" name="agent_id" required placeholder="e.g., agt_12345abc"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                </div>
+
+                <!-- Credential Type -->
+                <div>
+                    <label for="credential_type" class="block text-sm font-medium text-gray-700 mb-1">Credential Type</label>
+                    <select id="credential_type" name="credential_type" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-white">
+                        <option value="API_KEY">API Key (Standard)</option>
+                        <option value="OAUTH2">OAuth2 Token (Delegated)</option>
+                        <option value="X402_PAYMENT_TOKEN">x402 Payment Token (Monetized)</option>
+                        <option value="ZERO_KNOWLEDGE_PROOF">Zero-Knowledge Proof (Private)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Payment Amount -->
+            <div>
+                <label for="payment_amount" class="block text-sm font-medium text-gray-700 mb-1">Payment Amount (for x402 testing)</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 sm:text-sm">$</span>
+                    </div>
+                    <input type="number" id="payment_amount" name="payment_amount" step="0.01" placeholder="0.00"
+                        class="w-full pl-8 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                </div>
+            </div>
+
+            <!-- Tool Call JSON -->
+            <div>
+                <label for="tool_call" class="block text-sm font-medium text-gray-700 mb-1">Tool Call (JSON)</label>
+                <textarea id="tool_call" name="tool_call" rows="5" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition font-mono text-sm"
+                    placeholder='{
+  "tool": "fetch_data",
+  "parameters": {
+    "query": "latest_trends"
+  }
+}'></textarea>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                <button type="submit" id="submitBtn"
+                    class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-200 flex justify-center items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Test in Simulation Mode
+                </button>
+                
+                <a href="https://agent-economy-os-production.up.railway.app" target="_blank"
+                    class="flex-1 bg-white border-2 border-indigo-600 text-indigo-700 hover:bg-indigo-50 font-semibold py-3 px-6 rounded-lg shadow-sm transition duration-200 flex justify-center items-center text-center">
+                    Go to Production
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+            </div>
+        </form>
+
+        <!-- Results Area -->
+        <div id="resultsArea" class="mt-10 hidden">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Simulation Results</h3>
+            <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                <pre id="resultsOutput" class="text-green-400 font-mono text-sm whitespace-pre-wrap"></pre>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-12 text-center text-gray-500 text-sm">
+        <p>Part of the Universal Agent Economy OS Open-Core Web-of-Repos Strategy</p>
+    </footer>
+
+    <script>
+        document.getElementById('testerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const resultsArea = document.getElementById('resultsArea');
+            const resultsOutput = document.getElementById('resultsOutput');
+            
+            // Gather form data
+            const formData = new FormData(e.target);
+            const payload = {
+                agent_id: formData.get('agent_id'),
+                credential_type: formData.get('credential_type'),
+                payment_amount: formData.get('payment_amount') ? parseFloat(formData.get('payment_amount')) : 0,
+                tool_call: formData.get('tool_call')
+            };
+
+            // Validate JSON
+            try {
+                payload.tool_call = JSON.parse(payload.tool_call);
+            } catch (err) {
+                resultsArea.classList.remove('hidden');
+                resultsOutput.className = "text-red-400 font-mono text-sm whitespace-pre-wrap";
+                resultsOutput.textContent = "Error: Invalid JSON in Tool Call field.\n\n" + err.message;
+                return;
+            }
+
+            // Update UI
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Simulating...';
+            resultsArea.classList.add('hidden');
+
+            try {
+                // Fetch POST to the gateway
+                const response = await fetch('https://agent-economy-os-production.up.railway.app/proxy/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json().catch(() => null);
+                
+                resultsArea.classList.remove('hidden');
+                if (response.ok) {
+                    resultsOutput.className = "text-green-400 font-mono text-sm whitespace-pre-wrap";
+                    resultsOutput.textContent = JSON.stringify(data || { status: "success", message: "Simulation executed successfully", statusCode: response.status }, null, 2);
+                } else {
+                    resultsOutput.className = "text-yellow-400 font-mono text-sm whitespace-pre-wrap";
+                    resultsOutput.textContent = `HTTP Error ${response.status}\n\n` + JSON.stringify(data || { error: "Failed to execute simulation" }, null, 2);
+                }
+            } catch (error) {
+                resultsArea.classList.remove('hidden');
+                resultsOutput.className = "text-red-400 font-mono text-sm whitespace-pre-wrap";
+                resultsOutput.textContent = "Network Error: Could not reach the simulation gateway.\n\n" + error.message;
+            } finally {
+                // Restore UI
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Test in Simulation Mode';
+            }
+        });
+    </script>
+</body>
+</html>
